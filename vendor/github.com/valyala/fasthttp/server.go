@@ -1453,6 +1453,7 @@ func nextConnID() uint64 {
 const DefaultMaxRequestBodySize = 4 * 1024 * 1024
 
 func (s *Server) serveConn(c net.Conn) error {
+	fmt.Printf("net.Conn:%p serveConn start", c)
 	serverName := s.getServerName()
 	connRequestNum := uint64(0)
 	connID := nextConnID()
@@ -1664,6 +1665,7 @@ func (s *Server) serveConn(c net.Conn) error {
 		releaseWriter(s, bw)
 	}
 	s.releaseCtx(ctx)
+	fmt.Printf("net.Conn:%p serveConn end", c)
 	return err
 }
 
@@ -1723,7 +1725,6 @@ func (s *Server) updateWriteDeadline(c net.Conn, ctx *RequestCtx, lastDeadlineTi
 func hijackConnHandler(r io.Reader, c net.Conn, s *Server, h HijackHandler) {
 	hjc := s.acquireHijackConn(r, c)
 	h(hjc)
-
 	if br, ok := r.(*bufio.Reader); ok {
 		releaseReader(s, br)
 	}
@@ -1738,15 +1739,21 @@ func (s *Server) acquireHijackConn(r io.Reader, c net.Conn) *hijackConn {
 			Conn: c,
 			r:    r,
 		}
+
+		fmt.Printf("hjc:%p, c.conn:%p fasthttp/server.go acquireHijackConn new \n", hjc, hjc.Conn)
 		return hjc
 	}
 	hjc := v.(*hijackConn)
 	hjc.Conn = c
 	hjc.r = r
+
+
+	fmt.Printf("hjc:%p, c.conn:%p fasthttp/server.go acquireHijackConn reuse \n", hjc, hjc.Conn)
 	return hjc
 }
 
 func (s *Server) releaseHijackConn(hjc *hijackConn) {
+	fmt.Printf("hjc:%p fasthttp/server.go releaseHijackConn(hjc *hijackConn)\n", hjc )
 	hjc.Conn = nil
 	hjc.r = nil
 	s.hijackConnPool.Put(hjc)
@@ -1763,8 +1770,30 @@ func (c hijackConn) Read(p []byte) (int, error) {
 
 func (c hijackConn) Close() error {
 	// hijacked conn is closed in hijackConnHandler.
+	//fmt.Printf("fasthttp/server.go (c hijackConn) Close()\n", &c)
 	return nil
 }
+
+func (c hijackConn) RemoteAddr() net.Addr {
+	// hijacked conn is closed in hijackConnHandler.
+	return c.Conn.RemoteAddr()
+}
+
+
+func (c hijackConn) SetWriteDeadline(t time.Time) error {
+	// hijacked conn is closed in hijackConnHandler.
+	if c.Conn == nil {
+		fmt.Printf("hjc:%p fasthttp/server.go (c hijackConn) SetWriteDeadline(t time.Time) is nil\n", &c)
+	} else {
+		fmt.Printf("hjc:%p fasthttp/server.go (c hijackConn) SetWriteDeadline(t time.Time) is not\n", &c)
+	}
+
+
+	return c.Conn.SetWriteDeadline(t)
+}
+
+
+
 
 // LastTimeoutErrorResponse returns the last timeout response set
 // via TimeoutError* call.

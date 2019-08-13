@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 	"unicode/utf8"
+	"fmt"
 )
 
 const (
@@ -243,7 +244,7 @@ type Conn struct {
 	subprotocol string
 
 	// Write fields
-	mu             chan bool // used as mutex to protect write to conn and closeSent
+	mu             chan bool // used as mutex to protect write to conn and closeSentSetWriteDeadline
 	closeSent      bool      // whether close message was sent
 	writeErr       error
 	writeBuf       []byte // frame is constructed in this buffer.
@@ -301,6 +302,13 @@ func newConn(conn net.Conn, isServer bool, readBufferSize, writeBufferSize int) 
 		writePos:               maxFrameHeaderSize,
 		enableWriteCompression: true,
 	}
+
+	fmt.Printf("conn:%p websocket/newConn start\n", c.conn)
+	if conn == nil {
+		fmt.Println("websocket/newConn con is nil")
+		panic("conn == nil")
+	}
+
 	c.SetPingHandler(nil)
 	c.SetPongHandler(nil)
 	return c
@@ -329,6 +337,7 @@ func (c *Conn) RemoteAddr() net.Addr {
 // Write methods
 
 func (c *Conn) write(frameType int, deadline time.Time, bufs ...[]byte) error {
+	fmt.Println("websocket/write")
 	<-c.mu
 	defer func() {
 		c.mu <- true
@@ -339,7 +348,13 @@ func (c *Conn) write(frameType int, deadline time.Time, bufs ...[]byte) error {
 	} else if frameType == CloseMessage {
 		c.closeSent = true
 	}
+	
+	if c.conn == nil {
+		fmt.Println("c.conn == nil")
+	}
 
+	fmt.Printf("conn:%p point:%p websocket/before/SetWriteDeadline \n", c.conn, &c.conn)
+	
 	if err := c.conn.SetWriteDeadline(deadline); err != nil {
 		return err
 	}
@@ -463,6 +478,7 @@ func (c *Conn) NextWriter(messageType int) (io.WriteCloser, error) {
 // flushFrame writes buffered data and extra as a frame to the network. The
 // final argument indicates that this is the last frame in the message.
 func (c *Conn) flushFrame(final bool, extra []byte) error {
+	fmt.Printf("conn:%p websocket/flushFrame\n", c.conn)
 	length := c.writePos - maxFrameHeaderSize + len(extra)
 
 	// Check for invalid control frames.

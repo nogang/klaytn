@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"fmt"
 )
 
 // NewPipeConns returns new bi-directonal connection pipe.
@@ -219,6 +220,8 @@ func (c *pipeConn) SetReadDeadline(deadline time.Time) error {
 }
 
 func (c *pipeConn) SetWriteDeadline(deadline time.Time) error {
+	fmt.Println("StartSetWriteDeadline")
+	fmt.Println(deadline)
 	if c.writeDeadlineTimer == nil {
 		c.writeDeadlineTimer = time.NewTimer(time.Hour)
 	}

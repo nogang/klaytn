@@ -59,7 +59,7 @@ type httpConn struct {
 func (hc *httpConn) LocalAddr() net.Addr              { return nullAddr }
 func (hc *httpConn) RemoteAddr() net.Addr             { return nullAddr }
 func (hc *httpConn) SetReadDeadline(time.Time) error  { return nil }
-func (hc *httpConn) SetWriteDeadline(time.Time) error { return nil }
+func (hc *httpConn) SetWriteDeadline(time.Time) error { fmt.Println("rpc/http.go SetWriteDeadline");return nil }
 func (hc *httpConn) SetDeadline(time.Time) error      { return nil }
 func (hc *httpConn) Write([]byte) (int, error)        { panic("Write called") }
 

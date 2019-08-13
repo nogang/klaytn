@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"fmt"
 )
 
 const (
@@ -149,8 +150,15 @@ func (u *Upgrader) Upgrade(ctx *fasthttp.RequestCtx, handlers ...func(*Conn)) er
 
 	// The subprotocol may have already been set in the response
 	subprotocol := u.selectSubprotocol(ctx)
-
+	fmt.Println("websocket/Upgrade")
 	ctx.Hijack(func(conn net.Conn) {
+
+		if conn == nil {
+			fmt.Println("websocket/Upgrade run hiject handler conn is nil")
+		} else {
+			fmt.Printf("conn:%p websocket/Upgrade run hiject handler \n",conn)
+		}
+
 		c := newConn(conn, true, u.ReadBufferSize, u.WriteBufferSize)
 		c.subprotocol = subprotocol
 		handler(c)
