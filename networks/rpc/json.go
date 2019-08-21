@@ -107,6 +107,7 @@ func NewCodec(rwc io.ReadWriteCloser, encode, decode func(v interface{}) error) 
 		encode: encode,
 		decode: decode,
 		rw:     rwc,
+		wg: sync.WaitGroup{},
 	}
 }
 
@@ -121,6 +122,7 @@ func NewJSONCodec(rwc io.ReadWriteCloser) ServerCodec {
 		encode: enc.Encode,
 		decode: dec.Decode,
 		rw:     rwc,
+		wg: sync.WaitGroup{},
 	}
 }
 
