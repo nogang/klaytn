@@ -1453,7 +1453,7 @@ func nextConnID() uint64 {
 const DefaultMaxRequestBodySize = 4 * 1024 * 1024
 
 func (s *Server) serveConn(c net.Conn) error {
-	fmt.Printf("net.Conn:%p serveConn start", c)
+	fmt.Printf("net.Conn:%p serveConn start \n", c)
 	serverName := s.getServerName()
 	connRequestNum := uint64(0)
 	connID := nextConnID()
@@ -1665,7 +1665,7 @@ func (s *Server) serveConn(c net.Conn) error {
 		releaseWriter(s, bw)
 	}
 	s.releaseCtx(ctx)
-	fmt.Printf("net.Conn:%p serveConn end", c)
+	fmt.Printf("net.Conn:%p serveConn end\n", c)
 	return err
 }
 
@@ -1724,7 +1724,9 @@ func (s *Server) updateWriteDeadline(c net.Conn, ctx *RequestCtx, lastDeadlineTi
 
 func hijackConnHandler(r io.Reader, c net.Conn, s *Server, h HijackHandler) {
 	hjc := s.acquireHijackConn(r, c)
+	fmt.Printf("hjc:%p, c.conn:%p hijackConnHandler before h \n", hjc, hjc.Conn)
 	h(hjc)
+	fmt.Printf("hjc:%p, c.conn:%p hijackConnHandler after h \n", hjc, hjc.Conn)
 	if br, ok := r.(*bufio.Reader); ok {
 		releaseReader(s, br)
 	}
