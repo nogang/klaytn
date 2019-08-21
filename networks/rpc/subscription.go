@@ -90,8 +90,11 @@ func (n *Notifier) CreateSubscription() *Subscription {
 func (n *Notifier) Notify(id ID, data interface{}) error {
 	n.subMu.RLock()
 	defer n.subMu.RUnlock()
+	
+	n.codec.Add(1)
+	defer n.codec.Done()
 
-	logger.Error("Notify","id",id)
+	logger.Error("Notify","id",id,"notifier",n)
 
 	sub, active := n.active[id]
 	if active {
