@@ -154,7 +154,12 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer func() {
-		fmt.Printf("codec.Wait() %p", codec)
+		fmt.Printf("codec.Wait() %p\n", codec)
+		notifier, supported := NotifierFromContext(ctx)
+		if supported { // interface doesn't support subscriptions (e.g. http)
+			notifier.unsubscribeAll()
+		}
+
 		codec.Wait()
 	}()
 	// if the codec supports notification include a notifier that callbacks can use
@@ -166,6 +171,7 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 	s.codecsMu.Lock()
 	if atomic.LoadInt32(&s.run) != 1 { // server stopped
 		s.codecsMu.Unlock()
+		fmt.Printf("codec: %p serveRequest Error 1\n", codec)
 		return &shutdownError{}
 	}
 	s.codecs.Add(codec)
@@ -182,6 +188,8 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 			}
 			// Error or end of stream, wait for requests and tear down
 			pend.Wait()
+
+			fmt.Printf("codec: %p serveRequest Error 2\n", codec)
 			return nil
 		}
 
@@ -191,6 +199,8 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 			codec.Write(codec.CreateErrorResponse(nil, err))
 			// Error or end of stream, wait for requests and tear down
 			pend.Wait()
+
+			fmt.Printf("codec: %p serveRequest Error 3\n", codec)
 			return nil
 		}
 
@@ -207,6 +217,8 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 			} else {
 				codec.Write(codec.CreateErrorResponse(&reqs[0].id, err))
 			}
+
+			fmt.Printf("codec: %p serveRequest Error 4\n", codec)
 			return nil
 		}
 
@@ -222,6 +234,7 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 			} else {
 				s.exec(ctx, codec, reqs[0])
 			}
+			fmt.Printf("codec: %p serveRequest Error 5\n", codec)
 			return nil
 		}
 		// For multi-shot connections, start a goroutine to serve and loop back
@@ -246,6 +259,7 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 			}
 		}(reqs, batch)
 	}
+	fmt.Printf("codec: %p serveRequest Error 6\n", codec)
 	return nil
 }
 
@@ -263,6 +277,7 @@ func (s *Server) ServeCodec(codec ServerCodec, options CodecOption) {
 // a single request has been processed!
 func (s *Server) ServeSingleRequest(ctx context.Context, codec ServerCodec, options CodecOption) {
 	s.serveRequest(ctx, codec, true, options)
+	fmt.Printf("ServerSingleRequest Cloase\n")
 }
 
 // Stop will stop reading new requests, wait for stopPendingRequestTimeout to allow pending requests to finish,
@@ -310,6 +325,7 @@ func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverReque
 			}
 
 			subid := ID(req.args[0].String())
+			logger.Error("handle unsubscribe")
 			if err := notifier.unsubscribe(subid); err != nil {
 				return codec.CreateErrorResponse(&req.id, &callbackError{err.Error()}), nil
 			}

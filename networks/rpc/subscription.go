@@ -98,6 +98,7 @@ func (n *Notifier) Notify(id ID, data interface{}) error {
 
 	sub, active := n.active[id]
 	if active {
+
 		notification := n.codec.CreateNotification(string(id), sub.namespace, data)
 		if err := n.codec.Write(notification); err != nil {
 			n.codec.Close()
@@ -117,6 +118,7 @@ func (n *Notifier) Closed() <-chan interface{} {
 func (n *Notifier) unsubscribe(id ID) error {
 	n.subMu.Lock()
 	defer n.subMu.Unlock()
+	logger.Error("unsubscribe", "id", id, "notifier",n)
 	if s, found := n.active[id]; found {
 		close(s.err)
 		delete(n.active, id)
@@ -137,4 +139,14 @@ func (n *Notifier) activate(id ID, namespace string) {
 		n.active[id] = sub
 		delete(n.inactive, id)
 	}
+}
+
+// unsubscribe a subscription.
+// If the subscription could not be found ErrSubscriptionNotFound is returned.
+func (n *Notifier) unsubscribeAll() {
+	n.subMu.Lock()
+	defer n.subMu.Unlock()
+	logger.Error("unsubscribeAll", "notifier",n)
+
+	n.active = make(map[ID]*Subscription)
 }
