@@ -85,6 +85,7 @@ type jsonCodec struct {
 	encMu  sync.Mutex                // guards the encoder
 	encode func(v interface{}) error // encoder to allow multiple transports
 	rw     io.ReadWriteCloser        // connection
+	wg	   sync.WaitGroup
 }
 
 func (err *jsonError) Error() string {
@@ -133,6 +134,18 @@ func isBatch(msg json.RawMessage) bool {
 		return c == '['
 	}
 	return false
+}
+
+func (c *jsonCodec) Wait() {
+	c.wg.Wait()
+}
+
+func (c *jsonCodec) Add(delta int) {
+	c.wg.Add(delta)
+}
+
+func (c *jsonCodec) Done() {
+	c.wg.Done()
 }
 
 // ReadRequestHeaders will read new requests without parsing the arguments. It will
