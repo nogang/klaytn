@@ -36,7 +36,7 @@ func (srv *Server) ServeListener(l net.Listener) error {
 		} else if err != nil {
 			return err
 		}
-		logger.Trace("Accepted connection", "addr", conn.RemoteAddr())
+		logger.Error("Accepted connection", "addr", conn.RemoteAddr())
 		go srv.ServeCodec(NewJSONCodec(conn), OptionMethodInvocation|OptionSubscriptions)
 	}
 }

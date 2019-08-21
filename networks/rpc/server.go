@@ -252,6 +252,7 @@ func (s *Server) serveRequest(ctx context.Context, codec ServerCodec, singleShot
 func (s *Server) ServeCodec(codec ServerCodec, options CodecOption) {
 	defer codec.Close()
 	s.serveRequest(context.Background(), codec, false, options)
+	fmt.Printf("ServerCodec Cloase\n")
 }
 
 // ServeSingleRequest reads and processes a single RPC request from the given codec. It will not
